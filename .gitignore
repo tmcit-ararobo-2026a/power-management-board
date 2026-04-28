@@ -63,3 +63,4 @@ fp-info-cache
 **/.history/
 .history
 ~**.lck
+**-backups
