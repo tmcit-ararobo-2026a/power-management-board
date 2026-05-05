@@ -9,23 +9,22 @@
 #include "power_management/fdcan_driver.hpp"
 
 namespace {
-
-bool initilized = false;
+/* パラメータ */
 gn10_can::devices::power_manager::Config config;
-uint16_t adc_raw_value[2];
-float voltage      = 0.0f;
-float current      = 0.0f;
 float conv_voltage = 0.00613573407f;
 float conv_current = 0.055f;
 int current_offset = 1985;
-
+/* CAN通信用クラス */
 FDCANDriver fdcan_driver(&hfdcan1);
 gn10_can::FDCANBus fdcan_bus(fdcan_driver);
 gn10_can::devices::PowerManagerServer server(fdcan_bus, 0);
+/* フラグやバッファ */
+bool initilized = false;
+uint16_t adc_raw_value[2];
+bool logical_stop_enabled = false;
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 uint32_t heartbeat_last_toggle_time_ms            = 0;
-
 /**
  * @brief Toggle heartbeat LED at a fixed interval.
  */
@@ -39,7 +38,10 @@ void update_heartbeat_led()
 }
 
 uint32_t sensor_last_update_time_ms = 0;
-
+/**
+ * @brief センサのデータを取得し正規化した値をCAN通信で送信
+ *
+ */
 void update_sensor()
 {
     const uint32_t now_ms = HAL_GetTick();
@@ -48,8 +50,8 @@ void update_sensor()
         /* 電圧・電流測定 */
         uint16_t current_raw = adc_raw_value[0];
         uint16_t vlotage_raw = adc_raw_value[1];
-        voltage              = vlotage_raw * conv_voltage;
-        current              = float((int)current_raw - current_offset) * conv_current;
+        float voltage        = vlotage_raw * conv_voltage;
+        float current        = float((int)current_raw - current_offset) * conv_current;
         /* CANで送信 */
         gn10_can::devices::power_manager::Sensor sensor_msg;
         sensor_msg.voltage = voltage;
@@ -73,9 +75,6 @@ void loop()
     if (server.get_new_init(config)) {
         initilized = true;
         HAL_GPIO_WritePin(LED4_GPIO_Port, LED4_Pin, GPIO_PIN_SET);
-    }
-
-    if (config.use_remote_emergency_stop) {
     }
 
     /* 電源遮断回路への信号を監視して放電回路を動作 */
