@@ -10,6 +10,15 @@
 
 namespace {
 
+bool initilized = false;
+gn10_can::devices::power_manager::Config config;
+uint16_t adc_raw_value[2];
+float voltage      = 0.0f;
+float current      = 0.0f;
+float conv_voltage = 0.00613573407f;
+float conv_current = 0.055f;
+int current_offset = 1985;
+
 FDCANDriver fdcan_driver(&hfdcan1);
 gn10_can::FDCANBus fdcan_bus(fdcan_driver);
 gn10_can::devices::PowerManagerServer server(fdcan_bus, 0);
@@ -29,14 +38,25 @@ void update_heartbeat_led()
     }
 }
 
-bool initilized = false;
-gn10_can::devices::power_manager::Config config;
-uint16_t adc_raw_value[2];
-float voltage      = 0.0f;
-float current      = 0.0f;
-float conv_voltage = 0.00613573407f;
-float conv_current = 0.055f;
-int current_offset = 1985;
+uint32_t sensor_last_update_time_ms = 0;
+
+void update_sensor()
+{
+    const uint32_t now_ms = HAL_GetTick();
+    if ((now_ms - sensor_last_update_time_ms) >= config.sensor_rate_ms) {
+        sensor_last_update_time_ms = now_ms;
+        /* 電圧・電流測定 */
+        uint16_t current_raw = adc_raw_value[0];
+        uint16_t vlotage_raw = adc_raw_value[1];
+        voltage              = vlotage_raw * conv_voltage;
+        current              = float((int)current_raw - current_offset) * conv_current;
+        /* CANで送信 */
+        gn10_can::devices::power_manager::Sensor sensor_msg;
+        sensor_msg.voltage = voltage;
+        sensor_msg.current = voltage;
+        server.set_sensor(sensor_msg);
+    }
+}
 
 }  // namespace
 
@@ -55,15 +75,10 @@ void loop()
         HAL_GPIO_WritePin(LED4_GPIO_Port, LED4_Pin, GPIO_PIN_SET);
     }
 
-    uint16_t current_raw = adc_raw_value[0];
-    uint16_t vlotage_raw = adc_raw_value[1];
-
-    voltage = vlotage_raw * conv_voltage;
-    current = float((int)current_raw - current_offset) * conv_current;
-
     if (config.use_remote_emergency_stop) {
     }
 
+    /* 電源遮断回路への信号を監視して放電回路を動作 */
     if (HAL_GPIO_ReadPin(EMS_EN_IN_GPIO_Port, EMS_EN_IN_Pin)) {  // 駆動系ON
         HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
@@ -72,6 +87,7 @@ void loop()
         HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
     }
 
+    update_sensor();
     update_heartbeat_led();
     HAL_Delay(1);
 }
