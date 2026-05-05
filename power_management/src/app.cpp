@@ -55,7 +55,7 @@ void update_sensor()
         /* CANで送信 */
         gn10_can::devices::power_manager::Sensor sensor_msg;
         sensor_msg.voltage = voltage;
-        sensor_msg.current = voltage;
+        sensor_msg.current = current;
         server.set_sensor(sensor_msg);
     }
 }
