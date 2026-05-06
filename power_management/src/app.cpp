@@ -21,7 +21,7 @@ gn10_can::devices::PowerManagerServer server(fdcan_bus, 0);
 /* フラグやバッファ */
 bool initilized = false;
 uint16_t adc_raw_value[2];
-bool logical_stop_enabled = false;
+bool can_stop_signal_enable = false;
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 uint32_t heartbeat_last_toggle_time_ms            = 0;
@@ -77,13 +77,37 @@ void loop()
         HAL_GPIO_WritePin(LED4_GPIO_Port, LED4_Pin, GPIO_PIN_SET);
     }
 
+    /* 遠隔非常停止 */
+    bool remote_emergency_stop_enable = false;
+    if (config.use_remote_emergency_stop) {
+        if (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) && HAL_GPIO_ReadPin(IN2_GPIO_Port, IN2_Pin)) {
+            remote_emergency_stop_enable = false;
+        } else {
+            remote_emergency_stop_enable = true;
+        }
+    }
+
+    /* CAN通信経由の非常停止信号受信 */
+    server.get_new_stop(can_stop_signal_enable);
+    if (can_stop_signal_enable) {
+        HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+    } else {
+        HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+    }
+
+    /* 遠隔非常停止＆CAN通信経由非常停止を反映 */
+    bool logical_stop_enable = can_stop_signal_enable || remote_emergency_stop_enable;
+    if (logical_stop_enable) {
+        HAL_GPIO_WritePin(EMS_EN_OUT_GPIO_Port, EMS_EN_OUT_Pin, GPIO_PIN_RESET);
+    } else {
+        HAL_GPIO_WritePin(EMS_EN_OUT_GPIO_Port, EMS_EN_OUT_Pin, GPIO_PIN_SET);
+    }
+
     /* 電源遮断回路への信号を監視して放電回路を動作 */
     if (HAL_GPIO_ReadPin(EMS_EN_IN_GPIO_Port, EMS_EN_IN_Pin)) {  // 駆動系ON
         HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
     } else {  // 駆動系OFF
         HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
     }
 
     update_sensor();
