@@ -10,7 +10,7 @@
 
 namespace {
 /* パラメータ */
-gn10_can::devices::power_manager::Config config;
+gn10_can::devices::power_manager::Config config{};
 float conv_voltage = 0.00613573407f;
 float conv_current = 0.055f;
 int current_offset = 1985;
