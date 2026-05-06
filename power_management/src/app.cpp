@@ -104,7 +104,8 @@ void loop()
     }
 
     /* 電源遮断回路への信号を監視して放電回路を動作 */
-    if (HAL_GPIO_ReadPin(EMS_EN_IN_GPIO_Port, EMS_EN_IN_Pin)) {  // 駆動系ON
+    if (HAL_GPIO_ReadPin(EMS_EN_IN_GPIO_Port, EMS_EN_IN_Pin) == GPIO_PIN_RESET) {  // 負論理
+        // 駆動系ON
         HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_RESET);
     } else {  // 駆動系OFF
         HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_SET);
