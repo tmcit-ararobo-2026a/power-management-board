@@ -22,6 +22,8 @@ gn10_can::devices::PowerManagerServer server(fdcan_bus, 0);
 bool initilized = false;
 uint16_t adc_raw_value[2];
 bool can_stop_signal_enable = false;
+/* 前の状態保持 */
+gn10_can::devices::power_manager::Status prev_status{false, false, false, false};
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 uint32_t heartbeat_last_toggle_time_ms            = 0;
@@ -78,13 +80,17 @@ void loop()
     }
 
     /* 遠隔非常停止 */
-    bool remote_emergency_stop_enable = false;
-    if (config.use_remote_emergency_stop) {
-        if (HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin) && HAL_GPIO_ReadPin(IN2_GPIO_Port, IN2_Pin)) {
-            remote_emergency_stop_enable = false;
-        } else {
-            remote_emergency_stop_enable = true;
-        }
+    bool remote_emergency_stop_enable    = false;
+    bool remote_emergency_stop_connected = HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin);
+    // 0Vのとき遠隔非常停止を有効化
+    if (HAL_GPIO_ReadPin(IN2_GPIO_Port, IN2_Pin)) {
+        remote_emergency_stop_enable = false;
+    } else {
+        remote_emergency_stop_enable = true;
+    }
+    // 遠隔非常停止機能を使わない場合は遠隔非常停止を無効化
+    if (!config.use_remote_emergency_stop) {
+        remote_emergency_stop_enable = false;
     }
 
     /* CAN通信経由の非常停止信号受信 */
@@ -104,11 +110,22 @@ void loop()
     }
 
     /* 電源遮断回路への信号を監視して放電回路を動作 */
-    if (HAL_GPIO_ReadPin(EMS_EN_IN_GPIO_Port, EMS_EN_IN_Pin) == GPIO_PIN_RESET) {  // 負論理
-        // 駆動系ON
-        HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_RESET);
-    } else {  // 駆動系OFF
+    bool emergency_stop_enabled =
+        HAL_GPIO_ReadPin(EMS_EN_IN_GPIO_Port, EMS_EN_IN_Pin) == GPIO_PIN_SET;
+    if (emergency_stop_enabled) {  // 負論理
+        // 駆動系OFF
         HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_SET);
+    } else {  // 駆動系ON
+        HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_RESET);
+    }
+
+    gn10_can::devices::power_manager::Status status{};
+    status.emergency_stop_enabled          = emergency_stop_enabled;
+    status.remote_emergency_stop_connected = remote_emergency_stop_connected;
+    status.remote_emergency_stop_enabled   = remote_emergency_stop_enable;
+    if (status != prev_status) {
+        server.set_status(status);
+        prev_status = status;
     }
 
     update_sensor();
