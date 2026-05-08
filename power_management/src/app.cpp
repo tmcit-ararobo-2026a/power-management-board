@@ -119,10 +119,16 @@ void loop()
         HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_RESET);
     }
 
+    /* 過電流保護 */
+    bool over_current =
+        HAL_GPIO_ReadPin(OCD1_GPIO_Port, OCD1_Pin) || HAL_GPIO_ReadPin(OCD2_GPIO_Port, OCD2_Pin);
+
+    /* Status送信 */
     gn10_can::devices::power_manager::Status status{};
     status.emergency_stop_enabled          = emergency_stop_enabled;
     status.remote_emergency_stop_connected = remote_emergency_stop_connected;
     status.remote_emergency_stop_enabled   = remote_emergency_stop_enable;
+    status.over_current                    = over_current;
     if (status != prev_status) {
         server.set_status(status);
         prev_status = status;
