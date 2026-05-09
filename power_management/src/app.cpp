@@ -136,7 +136,6 @@ void loop()
 
     update_sensor();
     update_heartbeat_led();
-    HAL_Delay(1);
 }
 
 extern "C" {
