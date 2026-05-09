@@ -10,25 +10,30 @@
 
 namespace {
 /* パラメータ */
-gn10_can::devices::power_manager::Config config{};
+gn10_can::devices::power_manager::Config config{false, 1000};
 float conv_voltage = 0.00613573407f;
 float conv_current = 0.055f;
 int current_offset = 1985;
+
 /* CAN通信用クラス */
 FDCANDriver fdcan_driver(&hfdcan1);
 gn10_can::FDCANBus fdcan_bus(fdcan_driver);
 gn10_can::devices::PowerManagerServer server(fdcan_bus, 0);
+
 /* フラグやバッファ */
 bool initilized = false;
 uint16_t adc_raw_value[2];
 bool can_stop_signal_enable = false;
+
 /* 前の状態保持 */
 gn10_can::devices::power_manager::Status prev_status{false, false, false, false};
 
+/* Hartbeat LED用 */
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 uint32_t heartbeat_last_toggle_time_ms            = 0;
 /**
- * @brief Toggle heartbeat LED at a fixed interval.
+ * @brief 一定周期のLEDチカチカ処理
+ *
  */
 void update_heartbeat_led()
 {
@@ -39,6 +44,7 @@ void update_heartbeat_led()
     }
 }
 
+/* センサの送信タイミング調整用 */
 uint32_t sensor_last_update_time_ms = 0;
 /**
  * @brief センサのデータを取得し正規化した値をCAN通信で送信
