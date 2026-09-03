@@ -1,13 +1,13 @@
-#include "power_management/app.hpp"
+#include "app/app.hpp"
 
 #include <cstdint>
 
 #include "adc.h"
+#include "app/can_callback_helper.hpp"
+#include "app/fdcan_driver.hpp"
 #include "gn10_can/core/fdcan_bus.hpp"
 #include "gn10_can/devices/power_manager_server.hpp"
 #include "gn10_can/devices/power_manager_types.hpp"
-#include "power_management/can_callback_helper.hpp"
-#include "power_management/fdcan_driver.hpp"
 
 namespace {
 /* パラメータ */

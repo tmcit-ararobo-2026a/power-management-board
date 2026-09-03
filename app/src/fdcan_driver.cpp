@@ -1,4 +1,4 @@
-#include "power_management/fdcan_driver.hpp"
+#include "app/fdcan_driver.hpp"
 
 #include "gn10_can/core/can_dlc.hpp"
 
