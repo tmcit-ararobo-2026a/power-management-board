@@ -6,6 +6,7 @@
 #include "gn10_can/core/fdcan_bus.hpp"
 #include "gn10_can/devices/power_manager_server.hpp"
 #include "gn10_can/devices/power_manager_types.hpp"
+#include "power_management/can_callback_helper.hpp"
 #include "power_management/fdcan_driver.hpp"
 
 namespace {
@@ -16,7 +17,7 @@ float conv_current = 0.055f;
 int current_offset = 1985;
 
 /* CAN通信用クラス */
-FDCANDriver fdcan_driver(&hfdcan1);
+gn10_can::drivers::FDCANDriver fdcan_driver(&hfdcan1);
 gn10_can::FDCANBus fdcan_bus(fdcan_driver);
 gn10_can::devices::PowerManagerServer server(fdcan_bus, 0);
 
@@ -151,6 +152,16 @@ extern "C" {
  */
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 {
-    fdcan_bus.update();
+    (void)RxFifo0ITs;
+    if (process_fdcan_fifo(hfdcan, &hfdcan1, fdcan_bus, FDCAN_RX_FIFO0)) return;
+}
+
+/**
+ * @brief Receive callback for FDCAN FIFO1.
+ */
+void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo1ITs)
+{
+    (void)RxFifo1ITs;
+    if (process_fdcan_fifo(hfdcan, &hfdcan1, fdcan_bus, FDCAN_RX_FIFO1)) return;
 }
 }

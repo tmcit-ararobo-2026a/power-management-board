@@ -1,16 +1,39 @@
+/**
+ * @file driver_stm32_fdcan.hpp
+ * @author Gento Aiba (aiba-gento)
+ * @brief STM32 FDCANのドライバ具体化クラスのヘッダファイル
+ * @version 0.1.0
+ * @date 2026-01-11
+ *
+ * @copyright Copyright (c) 2026
+ * SPDX-License-Identifier: Apache-2.0
+ */
 #pragma once
-#include "fdcan.h"
-#include "gn10_can/drivers/fdcan_driver_interface.hpp"
 
-class FDCANDriver : public gn10_can::drivers::IFDCANDriver
+#include "gn10_can/drivers/fdcan_driver_interface.hpp"
+#include "main.h"
+
+namespace gn10_can {
+namespace drivers {
+
+class FDCANDriver : public IFDCANDriver
 {
 public:
     FDCANDriver(FDCAN_HandleTypeDef* hfdcan) : hfdcan_(hfdcan) {}
 
+    /**
+     * @brief init前に呼び出すことでidの拡張フォーマットを有効化できる
+     *
+     */
+    void set_init_extended_id();
     bool init();
-    bool send(const gn10_can::FDCANFrame& frame) override;
-    bool receive(gn10_can::FDCANFrame& out_frame) override;
+    bool send(const FDCANFrame& frame) override;
+    bool receive(FDCANFrame& out_frame) override;
 
 private:
     FDCAN_HandleTypeDef* hfdcan_;
+    const uint32_t TX_FIFO_TIMEOUT = 2;  // 送信FIFOが空くまで待つ際のタイムアウト
+    bool enable_extended           = false;
 };
+}  // namespace drivers
+}  // namespace gn10_can
