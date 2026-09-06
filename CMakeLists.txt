@@ -37,8 +37,9 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
-add_subdirectory(power_management)
+add_subdirectory(app)
 add_subdirectory(gn10_can)
+add_subdirectory(gn10-stm32-fdcan-driver)
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -75,6 +76,6 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-    power_management
+    app
     # Add user defined libraries
 )
