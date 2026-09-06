@@ -1,4 +1,4 @@
-24927360109657037
+24950655008853802
 0Ikedalibrary
 1SMB5929BT3G
 
@@ -42,14 +42,14 @@
 1
 1
 0Ikedalibrary
-35ZLH470MEFC10X16
+50ZLH1000MEFC16X25
 
 
 0
 2
 2
 0Ikedalibrary
-50ZLH1000MEFC16X25
+177CDMCCDS-3R3MC
 
 
 0
@@ -189,6 +189,13 @@ CAPPRD350W60D800H1300
 2
 2
 0Ikedalibrary
+CH243-2032LF
+
+
+0
+3
+2
+0Ikedalibrary
 CH340K
 
 
@@ -280,6 +287,13 @@ DRR4110
 5
 5
 0Ikedalibrary
+Diode_US2H
+
+
+0
+2
+2
+0Ikedalibrary
 ECS-MPIL0530-3R3MC
 
 
@@ -314,6 +328,13 @@ FR01FR16H-S
 0
 5
 5
+0Ikedalibrary
+G8ND2DC12SK
+G8ND-2-DC12SK-1
+Relay or Contactor
+0
+8
+8
 0Ikedalibrary
 GM4ZR83232AE
 
@@ -376,7 +397,14 @@ LS601-CRwithCAP
 
 0
 6
-6
+4
+0Ikedalibrary
+LTC4368IMS-2#PBF
+
+
+0
+10
+10
 0Ikedalibrary
 LTSN-B32JEGBB-LY
 
@@ -427,6 +455,20 @@ OSTB0603C1C-A
 4
 4
 0Ikedalibrary
+OSX05201-GGR1
+
+
+0
+10
+10
+0Ikedalibrary
+OSX40601-AO
+
+
+0
+8
+8
+0Ikedalibrary
 P-HSOP8-0405-1.27-001
 
 
@@ -468,6 +510,13 @@ Resistor
 0
 2
 2
+0Ikedalibrary
+RGY0020B
+RGY0020B
+Integrated Circuit
+0
+21
+21
 0Ikedalibrary
 S-562T
 
@@ -539,12 +588,26 @@ Integrated Circuit
 8
 8
 0Ikedalibrary
+SON50P300X200X60-9N
+
+
+0
+9
+9
+0Ikedalibrary
 SON80P500X600X100-15N
 NHM0014A
 Integrated Circuit
 0
 15
 15
+0Ikedalibrary
+SOP50P490X110-10N
+-Lead Plastic MSOP
+Integrated Circuit
+0
+10
+10
 0Ikedalibrary
 SOP_Advance
 https://toshiba.semicon-storage.com/jp/semiconductor/design-development/package/detail.SOP%20Advance.html
@@ -587,6 +650,13 @@ Switch
 0
 6
 6
+0Ikedalibrary
+SW_Cherry_MX_1.00u_PCB
+
+
+0
+2
+2
 0Ikedalibrary
 THAF01-NC-R
 
@@ -643,6 +713,13 @@ TSON Advance
 0
 9
 3
+0Ikedalibrary
+TSOP6F
+
+
+0
+6
+6
 0Ikedalibrary
 TestPoint_Pad_10x10mm
 SMD rectangular pad as test Point, square 4.0mm side length
@@ -713,6 +790,13 @@ WS2812C-2020
 0
 4
 4
+0Ikedalibrary
+XAL6060103MEC
+XAL6060-103MEC
+Inductor
+0
+2
+2
 0Ikedalibrary
 XIAO-Add-On
 
