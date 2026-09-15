@@ -1,6 +1,7 @@
 #include "app/app.hpp"
 
 #include <cstdint>
+#include <cstdio>
 
 #include "adc.h"
 #include "gn10_can/core/fdcan_bus.hpp"
@@ -12,9 +13,10 @@
 namespace {
 /* パラメータ */
 gn10_can::devices::power_manager::Config config{false, 1000};
-float conv_voltage = 0.00613573407f;
-float conv_current = 0.055f;
-int current_offset = 1985;
+float ADC_PER_VOLTAGE    = 49.75f;
+float ADC_VOLTAGE_OFFSET = 1477.0f;
+float conv_current       = 0.055f;
+int current_offset       = 1985;
 
 /* CAN通信用クラス */
 gn10_can::drivers::FDCANDriver fdcan_driver(&hfdcan1);
@@ -59,8 +61,9 @@ void update_sensor()
         /* 電圧・電流測定 */
         uint16_t current_raw = adc_raw_value[0];
         uint16_t vlotage_raw = adc_raw_value[1];
-        float voltage        = vlotage_raw * conv_voltage;
-        float current        = float((int)current_raw - current_offset) * conv_current;
+        float voltage =
+            std::clamp((float(vlotage_raw) - ADC_VOLTAGE_OFFSET) / ADC_PER_VOLTAGE, 0.0f, 50.0f);
+        float current = float((int)current_raw - current_offset) * conv_current;
         /* CANで送信 */
         gn10_can::devices::power_manager::Sensor sensor_msg;
         sensor_msg.voltage = voltage;
