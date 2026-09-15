@@ -13,10 +13,13 @@
 namespace {
 /* パラメータ */
 gn10_can::devices::power_manager::Config config{false, 1000};
-constexpr float VOLTAGE_CONVERSION_RATE   = 1.0f / 49.75f;                       // No.2: 49.75
-constexpr float VOLTAGE_CONVERSION_OFFSET = 1477.0f;                             // No.2: 1477.0
-constexpr float CURRENT_CONVERSION_RATE   = 1.0f / ((4095.0f / 3.3f) * 0.012f);  // 12[mV/A]
-constexpr int CURRENT_CONVERSION_OFFSET   = 1.65f * (4095.0f / 3.3f);  // 0[A]での電圧は1.65[V]
+constexpr float VOLTAGE_CONVERSION_RATE   = 1.0f / 49.75f;  // No.2: 49.75
+constexpr float VOLTAGE_CONVERSION_OFFSET = 1477.0f;        // No.2: 1477.0
+constexpr float MCU_REFERENCE_VOLTAGE     = 3.30f;          // MCUのADC基準電圧[V]
+constexpr float CURRENT_CONVERSION_RATE =
+    1.0f / ((4095.0f / MCU_REFERENCE_VOLTAGE) * 0.012f);  // 12[mV/A]
+constexpr int CURRENT_CONVERSION_OFFSET =
+    1.65f * (4095.0f / MCU_REFERENCE_VOLTAGE);  // 0[A]での電圧は1.65[V]
 
 /* CAN通信用クラス */
 gn10_can::drivers::FDCANDriver fdcan_driver(&hfdcan1);
