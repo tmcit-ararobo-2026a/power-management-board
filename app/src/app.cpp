@@ -14,7 +14,7 @@ namespace {
 /* パラメータ */
 gn10_can::devices::power_manager::Config config{false, 1000};
 constexpr float VOLTAGE_CONVERSION_RATE   = 1.0f / 49.75f;  // No.2: 49.75
-constexpr float VOLTAGE_CONVERSION_OFFSET = 1477.0f;        // No.2: 1477.0
+constexpr float VOLTAGE_CONVERSION_OFFSET = 1534.0f;        // No.2: 1534.0
 constexpr float MCU_REFERENCE_VOLTAGE     = 3.30f;          // MCUのADC基準電圧[V]
 constexpr float CURRENT_CONVERSION_RATE =
     1.0f / ((4095.0f / MCU_REFERENCE_VOLTAGE) * 0.012f);  // 12[mV/A]
@@ -81,6 +81,7 @@ void update_sensor()
 void setup()
 {
     fdcan_driver.init();
+    HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
     if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_raw_value, 2) != HAL_OK) {
         Error_Handler();
     }
