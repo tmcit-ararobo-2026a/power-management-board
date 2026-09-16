@@ -47,6 +47,7 @@ void update_heartbeat_led()
     if ((now_ms - heartbeat_last_toggle_time_ms) >= HEARTBEAT_TOGGLE_INTERVAL_MS) {
         heartbeat_last_toggle_time_ms = now_ms;
         HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+        printf("adc voltage:%d, current:%d\n", adc_raw_value[1], adc_raw_value[0]);
     }
 }
 
