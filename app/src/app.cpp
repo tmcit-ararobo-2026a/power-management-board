@@ -1,6 +1,7 @@
 #include "app/app.hpp"
 
 #include <cstdint>
+#include <cstdio>
 
 #include "adc.h"
 #include "gn10_can/core/fdcan_bus.hpp"
@@ -12,9 +13,13 @@
 namespace {
 /* パラメータ */
 gn10_can::devices::power_manager::Config config{false, 1000};
-float conv_voltage = 0.00613573407f;
-float conv_current = 0.055f;
-int current_offset = 1985;
+constexpr float VOLTAGE_CONVERSION_RATE   = 1.0f / 49.75f;  // No.2: 49.75
+constexpr float VOLTAGE_CONVERSION_OFFSET = 1534.0f;        // No.2: 1534.0
+constexpr float MCU_REFERENCE_VOLTAGE     = 3.30f;          // MCUのADC基準電圧[V]
+constexpr float CURRENT_CONVERSION_RATE =
+    1.0f / ((4095.0f / MCU_REFERENCE_VOLTAGE) * 0.012f);  // 12[mV/A]
+constexpr int CURRENT_CONVERSION_OFFSET =
+    1.65f * (4095.0f / MCU_REFERENCE_VOLTAGE);  // 0[A]での電圧は1.65[V]
 
 /* CAN通信用クラス */
 gn10_can::drivers::FDCANDriver fdcan_driver(&hfdcan1);
@@ -22,7 +27,7 @@ gn10_can::FDCANBus fdcan_bus(fdcan_driver);
 gn10_can::devices::PowerManagerServer server(fdcan_bus, 0);
 
 /* フラグやバッファ */
-bool initilized = false;
+bool initialized = false;
 uint16_t adc_raw_value[2];
 bool can_stop_signal_enable = false;
 
@@ -30,8 +35,8 @@ bool can_stop_signal_enable = false;
 gn10_can::devices::power_manager::Status prev_status{false, false, false, false};
 
 /* Hartbeat LED用 */
-constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
-uint32_t heartbeat_last_toggle_time_ms            = 0;
+constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
+uint32_t heartbeat_last_toggle_time_ms          = 0;
 /**
  * @brief 一定周期のLEDチカチカ処理
  *
@@ -39,7 +44,7 @@ uint32_t heartbeat_last_toggle_time_ms            = 0;
 void update_heartbeat_led()
 {
     const uint32_t now_ms = HAL_GetTick();
-    if ((now_ms - heartbeat_last_toggle_time_ms) >= k_heartbeat_toggle_interval_ms) {
+    if ((now_ms - heartbeat_last_toggle_time_ms) >= HEARTBEAT_TOGGLE_INTERVAL_MS) {
         heartbeat_last_toggle_time_ms = now_ms;
         HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
     }
@@ -59,8 +64,10 @@ void update_sensor()
         /* 電圧・電流測定 */
         uint16_t current_raw = adc_raw_value[0];
         uint16_t vlotage_raw = adc_raw_value[1];
-        float voltage        = vlotage_raw * conv_voltage;
-        float current        = float((int)current_raw - current_offset) * conv_current;
+        float voltage        = std::clamp(
+            (float(vlotage_raw) - VOLTAGE_CONVERSION_OFFSET) * VOLTAGE_CONVERSION_RATE, 0.0f, 50.0f
+        );
+        float current = (float(current_raw) - CURRENT_CONVERSION_OFFSET) * CURRENT_CONVERSION_RATE;
         /* CANで送信 */
         gn10_can::devices::power_manager::Sensor sensor_msg;
         sensor_msg.voltage = voltage;
@@ -74,6 +81,7 @@ void update_sensor()
 void setup()
 {
     fdcan_driver.init();
+    HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
     if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_raw_value, 2) != HAL_OK) {
         Error_Handler();
     }
@@ -82,7 +90,7 @@ void setup()
 void loop()
 {
     if (server.get_new_init(config)) {
-        initilized = true;
+        initialized = true;
         HAL_GPIO_WritePin(LED4_GPIO_Port, LED4_Pin, GPIO_PIN_SET);
     }
 
@@ -143,6 +151,7 @@ void loop()
 
     update_sensor();
     update_heartbeat_led();
+    HAL_Delay(1);
 }
 
 extern "C" {
