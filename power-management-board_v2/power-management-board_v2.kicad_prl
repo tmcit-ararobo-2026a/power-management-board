@@ -46,7 +46,7 @@
       "drc_warnings",
       "shapes"
     ],
-    "visible_layers": "ffffffff_ffffffff_ffffffff_ffffffff",
+    "visible_layers": "ffffffff_ffffffff_fffffff5_ffffffff",
     "zone_display_mode": 0
   },
   "git": {
@@ -57,7 +57,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "power-management-board.kicad_prl",
+    "filename": "power-management-board_v2.kicad_prl",
     "version": 5
   },
   "net_inspector_panel": {
