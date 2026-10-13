@@ -552,7 +552,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "power-management-v2",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "",
@@ -752,7 +752,7 @@
         "uuid": "cbf02f09-66b8-4df2-bad1-d770d1d79406"
       }
     ],
-    "used_designators": "",
+    "used_designators": "R50-51",
     "variants": []
   },
   "sheets": [
