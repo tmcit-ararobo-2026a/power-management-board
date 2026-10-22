@@ -20,6 +20,7 @@ constexpr float CURRENT_CONVERSION_RATE =
     1.0f / ((4095.0f / MCU_REFERENCE_VOLTAGE) * 0.012f);  // 12[mV/A]
 constexpr int CURRENT_CONVERSION_OFFSET =
     1.65f * (4095.0f / MCU_REFERENCE_VOLTAGE);  // 0[A]での電圧は1.65[V]
+constexpr uint32_t CAPACITOR_CHARGE_TIME_MS = 500;
 
 /* CAN通信用クラス */
 gn10_can::drivers::FDCANDriver fdcan_driver(&hfdcan1);
@@ -29,7 +30,17 @@ gn10_can::devices::PowerManagerServer server(fdcan_bus, 0);
 /* フラグやバッファ */
 bool initialized = false;
 uint16_t adc_raw_value[2];
+// 非常停止
 bool can_stop_signal_enable = false;
+bool emergency_stop_enabled = true;
+// コンデンサ充電
+uint32_t capacitor_charge_start_tick = 0;
+enum class ChargeState : uint8_t {
+    Uncharged,
+    Charging,
+    Charged,
+};
+ChargeState capacitor_state = ChargeState::Uncharged;
 
 /* 前の状態保持 */
 gn10_can::devices::power_manager::Status prev_status{false, false, false, false};
@@ -76,6 +87,38 @@ void update_sensor()
     }
 }
 
+void update_output()
+{
+    // 非常停止スイッチが作動して電源遮断中
+    if (emergency_stop_enabled) {
+        HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(PRECHARGE_GPIO_Port, PRECHARGE_Pin, GPIO_PIN_RESET);
+        capacitor_state = ChargeState::Uncharged;
+        return;
+    }
+
+    // 非常停止スイッチは無効で電源ON
+    switch (capacitor_state) {
+        case ChargeState::Uncharged:
+            capacitor_charge_start_tick = HAL_GetTick();
+            capacitor_state             = ChargeState::Charging;
+            HAL_GPIO_WritePin(PRECHARGE_GPIO_Port, PRECHARGE_Pin, GPIO_PIN_SET);
+            break;
+
+        case ChargeState::Charging:
+            if ((HAL_GetTick() - capacitor_charge_start_tick) > CAPACITOR_CHARGE_TIME_MS) {
+                capacitor_state = ChargeState::Charged;
+                HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_SET);
+            }
+            break;
+
+        case ChargeState::Charged:
+
+        default:
+            break;
+    }
+}
+
 }  // namespace
 
 void setup()
@@ -94,45 +137,16 @@ void loop()
         HAL_GPIO_WritePin(LED4_GPIO_Port, LED4_Pin, GPIO_PIN_SET);
     }
 
-    /* 遠隔非常停止 */
-    bool remote_emergency_stop_enable    = false;
-    bool remote_emergency_stop_connected = HAL_GPIO_ReadPin(IN1_GPIO_Port, IN1_Pin);
-    // 0Vのとき遠隔非常停止を有効化
-    if (HAL_GPIO_ReadPin(IN2_GPIO_Port, IN2_Pin)) {
-        remote_emergency_stop_enable = false;
-    } else {
-        remote_emergency_stop_enable = true;
-    }
-    // 遠隔非常停止機能を使わない場合は遠隔非常停止を無効化
-    if (!config.use_remote_emergency_stop) {
-        remote_emergency_stop_enable = false;
-    }
-
     /* CAN通信経由の非常停止信号受信 */
     server.get_new_stop(can_stop_signal_enable);
-    if (can_stop_signal_enable) {
-        HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
-    } else {
-        HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
-    }
-
-    /* 遠隔非常停止＆CAN通信経由非常停止を反映 */
-    bool logical_stop_enable = can_stop_signal_enable || remote_emergency_stop_enable;
-    if (logical_stop_enable) {
-        HAL_GPIO_WritePin(EMS_EN_OUT_GPIO_Port, EMS_EN_OUT_Pin, GPIO_PIN_RESET);
-    } else {
-        HAL_GPIO_WritePin(EMS_EN_OUT_GPIO_Port, EMS_EN_OUT_Pin, GPIO_PIN_SET);
-    }
 
     /* 電源遮断回路への信号を監視して放電回路を動作 */
-    bool emergency_stop_enabled =
+    bool physical_emergency_stop_enabled =
         HAL_GPIO_ReadPin(EMS_EN_IN_GPIO_Port, EMS_EN_IN_Pin) == GPIO_PIN_SET;
-    if (emergency_stop_enabled) {  // 負論理
-        // 駆動系OFF
-        HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_SET);
-    } else {  // 駆動系ON
-        HAL_GPIO_WritePin(DISCHARGE_GPIO_Port, DISCHARGE_Pin, GPIO_PIN_RESET);
-    }
+
+    emergency_stop_enabled = physical_emergency_stop_enabled || can_stop_signal_enable;
+
+    update_output();
 
     /* 過電流保護 */
     bool over_current =
@@ -140,10 +154,9 @@ void loop()
 
     /* Status送信 */
     gn10_can::devices::power_manager::Status status{};
-    status.emergency_stop_enabled          = emergency_stop_enabled;
-    status.remote_emergency_stop_connected = remote_emergency_stop_connected;
-    status.remote_emergency_stop_enabled   = remote_emergency_stop_enable;
-    status.over_current                    = over_current;
+    status.emergency_stop_enabled        = emergency_stop_enabled;
+    status.remote_emergency_stop_enabled = can_stop_signal_enable;
+    status.over_current                  = over_current;
     if (status != prev_status) {
         server.set_status(status);
         prev_status = status;
