@@ -20,7 +20,8 @@ constexpr float CURRENT_CONVERSION_RATE =
     1.0f / ((4095.0f / MCU_REFERENCE_VOLTAGE) * 0.012f);  // 12[mV/A]
 constexpr int CURRENT_CONVERSION_OFFSET =
     1.65f * (4095.0f / MCU_REFERENCE_VOLTAGE);  // 0[A]での電圧は1.65[V]
-constexpr uint32_t CAPACITOR_CHARGE_TIME_MS = 500;
+constexpr uint32_t CAPACITOR_CHARGE_TIME_MS  = 500;
+constexpr uint32_t CAPACITOR_CHARGED_TIME_MS = 700;
 
 /* CAN通信用クラス */
 gn10_can::drivers::FDCANDriver fdcan_driver(&hfdcan1);
@@ -113,6 +114,9 @@ void update_output()
             break;
 
         case ChargeState::Charged:
+            if ((HAL_GetTick() - capacitor_charge_start_tick) > CAPACITOR_CHARGED_TIME_MS) {
+                HAL_GPIO_WritePin(PRECHARGE_GPIO_Port, PRECHARGE_Pin, GPIO_PIN_RESET);
+            }
 
         default:
             break;
