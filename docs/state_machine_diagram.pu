@@ -1,0 +1,36 @@
+@startuml
+hide empty description
+
+[*] --> Uncharged : Power On (Emergency stop enabled)
+
+state Uncharged {
+    Uncharged : ENABLE = RESET (Main relay OFF)
+    Uncharged : PRECHARGE = RESET (Precharge relay OFF)
+}
+
+state Charging {
+    Charging : ENABLE = RESET (Main relay OFF)
+    Charging : PRECHARGE = SET (Precharge relay ON)
+}
+
+state Charged {
+    state "Precharge & Main ON" as DualOn {
+        DualOn : ENABLE = SET (Main relay ON)
+        DualOn : PRECHARGE = SET (Precharge relay ON)
+    }
+    state "Main ON Only" as MainOnly {
+        MainOnly : ENABLE = SET (Main relay ON)
+        MainOnly : PRECHARGE = RESET (Precharge relay OFF)
+    }
+    [*] --> DualOn
+    DualOn --> MainOnly : Elapsed time > 700 ms
+}
+
+Uncharged --> Charging : Emergency stop released\n(Physical EMS OFF and CAN stop OFF)
+Charging --> DualOn : Elapsed time > 500 ms
+
+Charging --> Uncharged : Emergency stop detected\n(Physical EMS ON or CAN stop ON)
+DualOn --> Uncharged : Emergency stop detected\n(Physical EMS ON or CAN stop ON)
+MainOnly --> Uncharged : Emergency stop detected\n(Physical EMS ON or CAN stop ON)
+
+@enduml

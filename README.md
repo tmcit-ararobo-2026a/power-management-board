@@ -1,62 +1,82 @@
-# 電源管理基板
-ロボットのバッテリー管理・駆動系電源遮断を行う基板を作成
+# Power Management Board
 
-## 目次
+[日本語版](./README_jp.md)
 
-1. [概要](#1-概要)
-2. [コントリビューション](#2-コントリビューション)
-3. [ライセンス](#3-ライセンス)
+A power management board for robot battery monitoring, soft-start control, and drive power cutoff.
 
-## 1. 概要
-バッテリー管理コスト削減および駆動系電源遮断を目的とする。
-STM32G431K8T6を搭載し、各機能を統括する。
+![PCB](./docs/power-management-board-v2-pcb.png)
 
-### 機能
-- ソフトスタート機能
-- 過電圧保護機能
-- 電流計測機能
-- 制御系・駆動系の絶縁
-- 非常停止機能
-- バルクコンデンサ
+## Table of Contents
 
-### ソフトスタート機能
-突入電流を軽減する目的でソフトスタート機能を実装する。
-C2およびR2によって調整される。
+1. [Overview](#1-overview)
+2. [Features](#2-features)
+3. [State Machine](#3-state-machine)
+4. [Schematic](#4-schematic)
+5. [LED Indicators](#5-led-indicators)
+6. [CAN Communication](#6-can-communication)
+7. [Contributing](#7-contributing)
+8. [License](#8-license)
 
-100msぐらいで電圧が上昇する計算。
-コンデンサの充電時の突入電流を軽減できる。
+## 1. Overview
 
-### 過電圧保護機能
-モーターの回生電圧による過電圧時にバッテリーを遮断する。
-バッテリーの保護を目的とする。
+This board reduces battery management costs and provides reliable drive power cutoff.
+An STM32G431K8T6 controls all onboard functions.
 
-バルクコンデンサによる軽減および、LM74502QDDFRQ1（過電圧保護機能付き車載用低 IQ 逆極性保護コント
-ローラ）による過電圧保護が有効。
+## 2. Features
 
-過電圧保護は25V前後で働く。
-抵抗R3およびR4による分圧で決まる。
+### Soft-Start Function
+Implements a soft-start circuit to reduce inrush current.
+A precharge resistor is connected via a relay to charge the capacitors at low current.
+After 500 ms of precharging, the main relay turns on, and the precharge relay turns off after 700 ms.
 
-### 電流計測機能
-バッテリーから出力される電流値を測る。
-バッテリーの状態を判断したり、ロボットの総消費電流を分析する目的である。
+### Current and Voltage Measurement
+Measures output current and voltage via ADC with DMA.
+Used to monitor battery condition and analyze total robot power consumption.
+Over-current detection pins are also monitored.
 
-### 制御系・駆動系の絶縁
-制御系と駆動系の絶縁はフォトカプラによって実装。
-スイッチ部もSTM32等を保護する観点および、グランドのループを解消する目的で絶縁。
+### Control and Drive Isolation
+The control circuit and drive power circuit are electrically isolated using photocouplers.
 
-### 非常停止機能
-ダブルMOSFETによる完全な駆動系電源遮断を実現。
-遠隔非常停止との連携や物理的な非常停止スイッチをJ7/J8間に接続することで非常停止が作動する。
+### Emergency Stop Function
+Cuts off drive power using automotive relays.
+Supports two cutoff methods:
+- Cutoff via an external physical emergency stop switch.
+- Cutoff via CAN command controlling relay switching through the STM32 GPIO.
 
-### バルクコンデンサ
-モーターの回生電圧を抑え、過渡的な電流上昇時の電源安定を目的とし、2700uFの電解コンデンサを出力部に搭載。
+### Bulk Capacitors
+Two 2700 uF electrolytic capacitors (UHE1H272MHD) are mounted on the output to suppress motor regenerative voltage and stabilize power during transient current spikes.
+Each capacitor is rated for 3.8 A ripple current, providing 7.6 A total ripple current handling.
 
-UHE1H272MHDであり、ひとつあたりのリップル電流は3.8Aであるので、合計7.6Aの過渡的な電流増大を軽減できる。
+## 3. State Machine
 
-## 2. コントリビューション
+Output relays are controlled according to the emergency stop state and the capacitor charge state.
 
-[CONTRIBUTING.md](./CONTRIBUTING.md) を参照してください。
+![State Machine Diagram](./docs/state_machine_diagram.png)
 
-## 3. ライセンス
+## 4. Schematic
 
-本リポジトリは [MITライセンス](./LICENSE) のもとで公開されています。
+![Schematic](./docs/power-management-board_v2-sch.png)
+
+## 5. LED Indicators
+
+| Name | Color | Specification |
+| :---: | :---: | :--- |
+| LED1 | Red | Blinks every 500 ms in the main loop |
+| LED4 | Green | Lights up when initialized via CAN |
+
+## 6. CAN Communication
+
+- **Receive:**
+  - Initialization config (sets sensor transmission rate and turns on LED4)
+  - Remote emergency stop command
+- **Transmit:**
+  - Sensor data (voltage and current at the configured interval, default 1000 ms)
+  - Status data (emergency stop state, remote emergency stop state, and over-current state on change)
+
+## 7. Contributing
+
+Please refer to [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## 8. License
+
+This repository is licensed under the [MIT License](./LICENSE).
