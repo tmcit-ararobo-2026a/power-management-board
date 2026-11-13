@@ -52,7 +52,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, LED4_Pin|LED3_Pin|LED2_Pin|LED1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, DISCHARGE_Pin|EMS_EN_OUT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, ENABLE_Pin|PRECHARGE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : LED4_Pin LED3_Pin LED2_Pin LED1_Pin */
   GPIO_InitStruct.Pin = LED4_Pin|LED3_Pin|LED2_Pin|LED1_Pin;
@@ -61,20 +61,24 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IN2_Pin IN1_Pin OCD1_Pin OCD2_Pin
-                           EMS_EN_IN_Pin */
-  GPIO_InitStruct.Pin = IN2_Pin|IN1_Pin|OCD1_Pin|OCD2_Pin
-                          |EMS_EN_IN_Pin;
+  /*Configure GPIO pins : OCD1_Pin OCD2_Pin EMS_EN_IN_Pin */
+  GPIO_InitStruct.Pin = OCD1_Pin|OCD2_Pin|EMS_EN_IN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DISCHARGE_Pin EMS_EN_OUT_Pin */
-  GPIO_InitStruct.Pin = DISCHARGE_Pin|EMS_EN_OUT_Pin;
+  /*Configure GPIO pins : ENABLE_Pin PRECHARGE_Pin */
+  GPIO_InitStruct.Pin = ENABLE_Pin|PRECHARGE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : NOT_RECEIVING_POWER_Pin */
+  GPIO_InitStruct.Pin = NOT_RECEIVING_POWER_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(NOT_RECEIVING_POWER_GPIO_Port, &GPIO_InitStruct);
 
 }
 
